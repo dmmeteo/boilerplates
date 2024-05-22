@@ -1,0 +1,36 @@
+# here is a sample config for jupyter notebook
+# includes variables for traefik and authentication
+# JUPYTER_PASSWORD password must be hashed
+
+
+services:
+  jupyter:
+    image: jupyter/minimal-notebook:latest
+    container_name: jupyter
+    restart: unless-stopped
+    user: root
+    environment:
+      - NB_USER=jovyan
+      - NB_UID=1234
+      - NB_GID=1234
+      - CHOWN_HOME=yes
+      - CHOWN_HOME_OPTS=-R
+    command: "start-notebook.sh --NotebookApp.password=${JUPYTER_PASSWORD}"
+    volumes:
+      - ./jupyter/config:/home/jovyan/.jupyter
+      - ./jupyter/work:/home/jovyan/work
+      - ./jupyter/datasets:/home/jovyan/datasets
+      - ./jupyter/modules:/home/jovyan/modules
+    ports:
+      - 8888:8888
+
+    # Traefik config if enabled
+    labels:
+      - "traefik.enable=true"
+      # HTTP Routers
+      - "traefik.http.routers.jupyter.entrypoints=web,websecure"
+      - "traefik.http.routers.jupyter.rule=Host(`${JUPYTER_HOST}`)"
+      # HTTP Services
+      - "traefik.http.routers.jupyter.tls=true"
+      - "traefik.http.routers.jupyter.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jupyter-svc.loadbalancer.server.port=8888"
